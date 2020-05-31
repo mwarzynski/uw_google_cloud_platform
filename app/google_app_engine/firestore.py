@@ -13,57 +13,31 @@
 # limitations under the License.
 
 # [START bookshelf_firestore_client_import]
-from google.cloud import firestore
+import uuid
+from dataclasses import dataclass, asdict
+
+from google.cloud import datastore
 # [END bookshelf_firestore_client_import]
 
 
-def document_to_dict(doc):
-    if not doc.exists:
-        return None
-    doc_dict = doc.to_dict()
-    doc_dict['id'] = doc.id
-    return doc_dict
+@dataclass
+class Image:
+    email: str
+    filename: str
+    file_digest: str
+
+    def key(self) -> str:
+        return self.email + ":" + self.file_digest
 
 
-def next_page(limit=10, start_after=None):
-    db = firestore.Client()
-
-    query = db.collection(u'Book').limit(limit).order_by(u'title')
-
-    if start_after:
-        # Construct a new query starting at this document.
-        query = query.start_after({u'title': start_after})
-
-    docs = query.stream()
-    docs = list(map(document_to_dict, docs))
-
-    last_title = None
-    if limit == len(docs):
-        # Get the last document from the results and set as the last title.
-        last_title = docs[-1][u'title']
-    return docs, last_title
-
-
-def read(book_id):
-    # [START bookshelf_firestore_client]
-    db = firestore.Client()
-    book_ref = db.collection(u'Book').document(book_id)
-    snapshot = book_ref.get()
-    # [END bookshelf_firestore_client]
-    return document_to_dict(snapshot)
-
-
-def update(data, book_id=None):
-    db = firestore.Client()
-    book_ref = db.collection(u'Book').document(book_id)
-    book_ref.set(data)
-    return document_to_dict(book_ref.get())
-
-
-create = update
-
-
-def delete(id):
-    db = firestore.Client()
-    book_ref = db.collection(u'Book').document(id)
-    book_ref.delete()
+def create(image: Image) -> bool:
+    db = datastore.Client()
+    key = db.key('images', image.key())
+    # Check if image already exists
+    image_exists = db.get(key)
+    if image_exists:
+        return False
+    entity = datastore.Entity(key=key)
+    entity.update(asdict(image))
+    db.put(entity)
+    return True

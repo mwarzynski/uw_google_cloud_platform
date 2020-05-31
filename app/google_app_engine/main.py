@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import logging
-
+import hashlib
 import firestore
-from flask import current_app, flash, Flask, Markup, redirect, render_template
+from flask import current_app, Flask, redirect, render_template
 from flask import request, url_for
 from google.cloud import error_reporting
 import google.cloud.logging
@@ -23,24 +23,18 @@ import storage
 
 
 # [START upload_image_file]
-def upload_image_file(img):
+def upload_image_file(image_data, filename, content_type):
     """
     Upload the user-uploaded file to Google Cloud Storage and retrieve its
     publicly-accessible URL.
     """
-    if not img:
-        return None
-
     public_url = storage.upload_file(
-        img.read(),
-        img.filename,
-        img.content_type
+        image_data,
+        filename,
+        content_type
     )
-
-    current_app.logger.info(
-        'Uploaded file %s as %s.', img.filename, public_url)
-
-    return public_url
+    current_app.logger.debug(
+        'Uploaded file %s as %s.', filename, public_url)
 # [END upload_image_file]
 
 
@@ -64,68 +58,32 @@ if not app.testing:
 
 @app.route('/')
 def list():
-    start_after = request.args.get('start_after', None)
-    books, last_title = firestore.next_page(start_after=start_after)
-
-    return render_template('list.html', books=books, last_title=last_title)
+    return render_template('form.html')
 
 
-@app.route('/books/<book_id>')
-def view(book_id):
-    book = firestore.read(book_id)
-    return render_template('view.html', book=book)
+# @app.route('/image/<book_id>')
+# def view(book_id):
+#     book = firestore.read(book_id)
+#     return render_template('view.html', book=book)
 
 
-@app.route('/books/add', methods=['GET', 'POST'])
+@app.route('/images/add', methods=['POST'])
 def add():
-    if request.method == 'POST':
-        data = request.form.to_dict(flat=True)
-
-        # If an image was uploaded, update the data to point to the new image.
-        image_url = upload_image_file(request.files.get('image'))
-
-        if image_url:
-            data['imageUrl'] = image_url
-
-        book = firestore.create(data)
-
-        return redirect(url_for('.view', book_id=book['id']))
-
-    return render_template('form.html', action='Add', book={})
-
-
-@app.route('/books/<book_id>/edit', methods=['GET', 'POST'])
-def edit(book_id):
-    book = firestore.read(book_id)
-
-    if request.method == 'POST':
-        data = request.form.to_dict(flat=True)
-
-        # If an image was uploaded, update the data to point to the new image.
-        image_url = upload_image_file(request.files.get('image'))
-
-        if image_url:
-            data['imageUrl'] = image_url
-
-        book = firestore.update(data, book_id)
-
-        return redirect(url_for('.view', book_id=book['id']))
-
-    return render_template('form.html', action='Edit', book=book)
-
-
-@app.route('/books/<book_id>/delete')
-def delete(book_id):
-    firestore.delete(book_id)
-    return redirect(url_for('.list'))
-
-
-@app.route('/logs')
-def logs():
-    logging.info('Hey, you triggered a custom log entry. Good job!')
-    flash(Markup('''You triggered a custom log entry. You can view it in the
-        <a href="https://console.cloud.google.com/logs">Cloud Console</a>'''))
-    return redirect(url_for('.list'))
+    data = request.form.to_dict(flat=True)
+    # If an image was uploaded, update the data to point to the new image.
+    image = request.files.get('image')
+    data['filename'] = image.filename
+    # TODO(mwarzynski): Determine email based on Auth system.
+    data['email'] = 'm.warzynski@student.uw.edu.pl'
+    image_data = image.read()
+    image_file_digest = str(hashlib.md5(image_data).hexdigest())
+    data['file_digest'] = image_file_digest
+    f_image = firestore.Image(data['email'], data['filename'], image_file_digest)
+    created = firestore.create(f_image)
+    if not created:
+        return render_template('form.html', message="Image already exists!")
+    upload_image_file(image_data, image.filename, image.content_type)
+    return render_template('form.html')
 
 
 @app.route('/errors')
