@@ -15,6 +15,7 @@
 import logging
 import hashlib
 import firestore
+import os
 from flask import current_app, Flask, redirect, render_template
 from flask import request, url_for
 from google.cloud import error_reporting
@@ -23,18 +24,18 @@ import storage
 
 
 # [START upload_image_file]
-def upload_image_file(image_data, filename, content_type):
+def upload_image_file(image_data, file_digest, content_type):
     """
     Upload the user-uploaded file to Google Cloud Storage and retrieve its
     publicly-accessible URL.
     """
     public_url = storage.upload_file(
         image_data,
-        filename,
+        file_digest,
         content_type
     )
     current_app.logger.debug(
-        'Uploaded file %s as %s.', filename, public_url)
+        'Uploaded file %s as %s.', file_digest, public_url)
 # [END upload_image_file]
 
 
@@ -57,7 +58,7 @@ if not app.testing:
 
 
 @app.route('/')
-def list():
+def main():
     return render_template('form.html')
 
 
@@ -73,6 +74,7 @@ def add():
     # If an image was uploaded, update the data to point to the new image.
     image = request.files.get('image')
     data['filename'] = image.filename
+    _, file_extension = os.path.splitext(image.filename)
     # TODO(mwarzynski): Determine email based on Auth system.
     data['email'] = 'm.warzynski@student.uw.edu.pl'
     image_data = image.read()
@@ -82,7 +84,7 @@ def add():
     created = firestore.create(f_image)
     if not created:
         return render_template('form.html', message="Image already exists!")
-    upload_image_file(image_data, image.filename, image.content_type)
+    upload_image_file(image_data, image_file_digest + file_extension, image.content_type)
     return render_template('form.html')
 
 

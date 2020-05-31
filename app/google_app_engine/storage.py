@@ -14,14 +14,12 @@
 
 from __future__ import absolute_import
 
-import datetime
 import os
 
 from flask import current_app
 from google.cloud import storage
 import six
 from werkzeug.exceptions import BadRequest
-from werkzeug.utils import secure_filename
 
 
 def _check_extension(filename, allowed_extensions):
@@ -31,26 +29,12 @@ def _check_extension(filename, allowed_extensions):
             '{0} has an invalid name or extension'.format(filename))
 
 
-def _safe_filename(filename):
-    """
-    Generates a safe filename that is unlikely to collide with existing
-    objects in Google Cloud Storage.
-
-    ``filename.ext`` is transformed into ``filename-YYYY-MM-DD-HHMMSS.ext``
-    """
-    filename = secure_filename(filename)
-    date = datetime.datetime.utcnow().strftime("%Y-%m-%d-%H%M%S")
-    basename, extension = filename.rsplit('.', 1)
-    return "{0}-{1}.{2}".format(basename, date, extension)
-
-
 def upload_file(file_stream, filename, content_type):
     """
     Uploads a file to a given Cloud Storage bucket and returns the public url
     to the new object.
     """
     _check_extension(filename, current_app.config['ALLOWED_EXTENSIONS'])
-    filename = _safe_filename(filename)
 
     bucketname = os.getenv('GOOGLE_STORAGE_BUCKET')
 
