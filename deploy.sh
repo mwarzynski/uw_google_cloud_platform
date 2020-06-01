@@ -2,6 +2,8 @@
 
 export PROJECT_ID=$(gcloud config get-value project)
 
+export SENDGRID_API_KEY="NO_SECRETS_IN_GIT_AS_EVERY_RESPONSIBLE_CITIZEN_WOULD_DO"
+
 ### CREATE
 
 #gcloud services enable storage-component.googleapis.com
@@ -13,6 +15,7 @@ gcloud services enable appengine.googleapis.com
 gcloud services enable storage-api.googleapis.com
 gcloud services enable logging.googleapis.com
 gcloud services enable clouderrorreporting.googleapis.com
+gcloud services enable iap.googleapis.com
 
 # Creating a bucket for Cloud Functions
 export BUCKET_GCF=$PROJECT_ID-gcf
@@ -37,10 +40,8 @@ export TOPIC_IMAGE_WAS_SCALED=image-was-scaled
 #(cd gcf_3; ./deploy.sh)
 
 # # Deploy service 'app' to Cloud Run.
-# gcloud builds submit --tag gcr.io/${PROJECT_ID}/app
-# gcloud run deploy --image gcr.io/${PROJECT_ID}/app --platform managed
-
-
+# (cd app/google_app_engine; ./deploy.sh)
+# Setup IAP to require credentials.
 
 
 ### DELETE

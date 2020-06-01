@@ -13,8 +13,8 @@
 # limitations under the License.
 
 # [START bookshelf_firestore_client_import]
-import uuid
 from dataclasses import dataclass, asdict
+import hashlib
 
 from google.cloud import datastore
 # [END bookshelf_firestore_client_import]
@@ -27,7 +27,8 @@ class Image:
     file_digest: str
 
     def key(self) -> str:
-        return self.email + ":" + self.file_digest
+        key_value = self.email + ":" + self.file_digest
+        return str(hashlib.md5(bytes(key_value.encode("utf-8"))).hexdigest())
 
 
 def create(image: Image) -> bool:

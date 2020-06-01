@@ -16,11 +16,12 @@ import logging
 import hashlib
 import firestore
 import os
-from flask import current_app, Flask, redirect, render_template
-from flask import request, url_for
+from flask import g, current_app, Flask, render_template
+from flask import request
 from google.cloud import error_reporting
 import google.cloud.logging
 import storage
+import user
 
 
 # [START upload_image_file]
@@ -41,9 +42,9 @@ def upload_image_file(image_data, file_digest, content_type):
 
 app = Flask(__name__)
 app.config.update(
-    SECRET_KEY='secret',
+    SECRET_KEY=os.urandom(24),
     MAX_CONTENT_LENGTH=8 * 1024 * 1024,
-    ALLOWED_EXTENSIONS=set(['png', 'jpg', 'jpeg', 'gif'])
+    ALLOWED_EXTENSIONS=set(['png', 'jpg', 'jpeg'])
 )
 
 app.debug = False
@@ -55,28 +56,22 @@ if not app.testing:
     client = google.cloud.logging.Client()
     # Attaches a Google Stackdriver logging handler to the root logger
     client.setup_logging(logging.INFO)
+if app.testing:
+    user.test_user = "tester@google.com"
 
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
+@user.authorize_by_headers
 def main():
-    return render_template('form.html')
+    if request.method == "GET":
+        return render_template('form.html')
 
-
-# @app.route('/image/<book_id>')
-# def view(book_id):
-#     book = firestore.read(book_id)
-#     return render_template('view.html', book=book)
-
-
-@app.route('/images/add', methods=['POST'])
-def add():
     data = request.form.to_dict(flat=True)
     # If an image was uploaded, update the data to point to the new image.
     image = request.files.get('image')
     data['filename'] = image.filename
     _, file_extension = os.path.splitext(image.filename)
-    # TODO(mwarzynski): Determine email based on Auth system.
-    data['email'] = 'm.warzynski@student.uw.edu.pl'
+    data['email'] = g.username
     image_data = image.read()
     image_file_digest = str(hashlib.md5(image_data).hexdigest())
     data['file_digest'] = image_file_digest
@@ -84,8 +79,8 @@ def add():
     created = firestore.create(f_image)
     if not created:
         return render_template('form.html', message="Image already exists!")
-    upload_image_file(image_data, image_file_digest + file_extension, image.content_type)
-    return render_template('form.html')
+    upload_image_file(image_data, f_image.key() + file_extension, image.content_type)
+    return render_template('form.html', message="Image added to processing queue.")
 
 
 @app.route('/errors')
