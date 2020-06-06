@@ -28,37 +28,52 @@ topic_path = publisher.topic_path(os.getenv('PROJECT_ID'), os.getenv('TOPIC_NAME
 
 
 @dataclass
-class Event:
-    success: bool
-    image_id: str
-    image_text: str
-    blob_name: str
-    email: str
-    error: str
+class Message:
+    recipient: str
+    sender: str
+    title: str
+    html_content: str
 
 
-def gcf2(file_data, context):
-    event = Event(True, "", "", "", "", "")
-    try:
-        event.blob_name = file_data['name']
-        event.image_id = event.blob_name.split(".")[0]
-        image_entity = datastore.get_image_by_id(event.image_id)
-        event.email = image_entity.get("email")
+def gcf2(file_data, _):
+    # Evaluate the URI of the blob.
+    blob_name = file_data['name']
+    blob_uri = f'gs://{BUCKET_NAME}/{blob_name}'
 
-        blob_uri = f'gs://{BUCKET_NAME}/{event.blob_name}'
-        print(f'Analyzing {event.blob_name}, ID={event.image_id}')
+    # Use Visual API to get the Image Text.
+    image = vision.types.Image()
+    image.source.image_uri = blob_uri
+    response = vision_client.text_detection(image=image)
+    annotations = response.text_annotations
+    if len(annotations) == 0:
+        # If there is no text from Visual API, abort.
+        print(f"Text from '{blob_uri}' could not be evaluated. No annotations received from Visual API.")
+        return
+    image_text = annotations[0].description
 
-        image = vision.types.Image()
-        image.source.image_uri = blob_uri
-        response = vision_client.text_detection(image=image)
+    # Update image_text in Datastore.
+    # Also, fetch the email for the recipient.
+    image_id = blob_name.split(".")[0]
+    image_entity = datastore.get_image_by_id(image_id)
+    datastore.update_image_text(image_entity, image_text)
 
-        annotations = response.text_annotations
-        if len(annotations) > 0:
-            event.image_text = annotations[0].description
-        datastore.update_image_text(image_entity, event.image_text)
-    except Exception as e:
-        event.success = False
-        event.error = str(e)
-        print(e)
-    message = json.dumps(asdict(event))
+    # Send message to topic.
+    message = _prepate_message(
+        image_entity.get("email"),
+        image_entity.get("filename"),
+        blob_name,
+        blob_name,
+        image_text
+    )
+    message = json.dumps(asdict(message))
     publisher.publish(topic_path, message.encode("utf-8"))
+
+
+def _prepate_message(recipient: str, filename: str, image_original: str, image_transformed: str, image_text: str) -> Message:
+    html_content = f"Image original: {image_original}<br/>Image transformed: {image_transformed}<br/><br/>{image_text}"
+    return Message(
+        recipient,
+        "noreply@gcplecturesproject.com",
+        f"{filename} has been processed!",
+        html_content
+    )
