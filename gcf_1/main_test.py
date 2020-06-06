@@ -20,13 +20,17 @@ from mock import MagicMock, patch
 import main
 
 
+@patch('main.tempfile')
 @patch('main.os')
 @patch('main.Image')
 @patch('main.storage_client')
-def test_scale_image(storage_client, image_mock, os_mock, capsys):
+def test_scale_image(storage_client, image_mock, os_mock, tempfile_mock, capsys):
+    bucket = 'images-bucket'
     filename = str(uuid.uuid4())
     scaled_bucket = 'images-scaled-bucket-' + str(uuid.uuid4())
+    temp_file = "/tmp/file"
 
+    tempfile_mock.mkstemp = MagicMock(return_value=(None, temp_file))
     os_mock.remove = MagicMock()
     os_mock.path = MagicMock()
     os_mock.path.basename = MagicMock(side_effect=(lambda x: x))
@@ -36,13 +40,20 @@ def test_scale_image(storage_client, image_mock, os_mock, capsys):
     image_mock.return_value = image_mock
     image_mock.__enter__.return_value = image_mock
 
+    data = {"bucket": bucket, "name": filename}
+
     blob = UserDict()
     blob.name = filename
     blob.bucket = UserDict()
     blob.download_to_filename = MagicMock()
     blob.upload_from_filename = MagicMock()
 
-    main.__scale_image(blob)
+    bucket = UserDict()
+    bucket.get_blob = MagicMock(return_value=blob)
+    bucket.blob = MagicMock(return_value=blob)
+    storage_client.bucket = MagicMock(return_value=bucket)
+
+    main.gcf1(data, None)
 
     out, _ = capsys.readouterr()
 

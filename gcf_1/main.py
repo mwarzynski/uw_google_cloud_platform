@@ -13,7 +13,6 @@
 # limitations under the License.
 
 
-# [START functions_imagemagick_setup]
 import os
 import tempfile
 
@@ -21,36 +20,27 @@ from google.cloud import storage
 from wand.image import Image
 
 storage_client = storage.Client()
-# [END functions_imagemagick_setup]
 
 
-# [START functions_imagemagick_analyze]
-def gcf1(data, context):
-    file_data = data
+def gcf1(data, _):
+    file_name = data['name']
+    bucket_name = data['bucket']
+    return __scale_image(bucket_name, file_name)
 
-    file_name = file_data['name']
-    bucket_name = file_data['bucket']
 
+def __scale_image(bucket_name: str, file_name: str):
     blob = storage_client.bucket(bucket_name).get_blob(file_name)
-
-    return __scale_image(blob)
-# [END functions_imagemagick_analyze]
-
-
-# [START functions_imagemagick_scale]
-def __scale_image(current_blob):
-    file_name = current_blob.name
+    file_name = blob.name
     _, temp_local_filename = tempfile.mkstemp()
 
     # Download file from bucket.
-    current_blob.download_to_filename(temp_local_filename)
+    blob.download_to_filename(temp_local_filename)
     print(f'Image {file_name} was downloaded to {temp_local_filename}.')
 
     # Scale the image using ImageMagick.
     with Image(filename=temp_local_filename) as image:
         image.transform(resize='640x480>')
         image.save(filename=temp_local_filename)
-
     print(f'Image {file_name} was resized.')
 
     # Upload result to a second bucket, to avoid re-triggering the function.
@@ -62,4 +52,3 @@ def __scale_image(current_blob):
 
     # Delete the temporary file.
     os.remove(temp_local_filename)
-# [END functions_imagemagick_scale]
