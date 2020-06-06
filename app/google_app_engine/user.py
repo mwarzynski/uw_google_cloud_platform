@@ -17,7 +17,7 @@ def authorize_by_headers(f):
             g.username = test_user
         else:
             user_header = request.headers.get("X-Goog-Authenticated-User-Email")
-            if len(user_header) == 0:
+            if user_header is None or len(user_header) == 0:
                 return make_response("not authorized"), 401
             g.username = user_header.replace("accounts.google.com:", "")
         return f(*args, **kwargs)

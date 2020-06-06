@@ -24,28 +24,14 @@ import storage
 import user
 from werkzeug.exceptions import BadRequest
 
-
-# [START upload_image_file]
-def upload_image_file(image_data, file_digest, content_type):
-    """
-    Upload the user-uploaded file to Google Cloud Storage and retrieve its
-    publicly-accessible URL.
-    """
-    public_url = storage.upload_file(
-        image_data,
-        file_digest,
-        content_type
-    )
-    current_app.logger.debug(
-        'Uploaded file %s as %s.', file_digest, public_url)
-# [END upload_image_file]
+datastore_client = datastore.Client()
 
 
 app = Flask(__name__)
 app.config.update(
     SECRET_KEY=os.urandom(24),
     MAX_CONTENT_LENGTH=8 * 1024 * 1024,
-    ALLOWED_EXTENSIONS=set(['png', 'jpg', 'jpeg'])
+    ALLOWED_EXTENSIONS={'png', 'jpg', 'jpeg'}
 )
 
 app.debug = False
@@ -85,12 +71,16 @@ def main():
     data['file_digest'] = image_file_digest
     # Run this block of code in transaction.
     # If anything will go wrong, then it will rollback changes in Datastore (created entity).
-    with datastore.transaction():
+    with datastore_client.transaction():
         f_image = datastore.Image(data['email'], data['filename'], image_file_digest)
-        created = datastore.create(f_image)
+        created = datastore_client.create(f_image)
         if not created:
             return render_template('form.html', message="Image already exists!")
-        upload_image_file(image_data, f_image.key() + file_extension, image.content_type)
+        storage.upload_file(
+            image_data,
+            f_image.key() + file_extension,
+            image.content_type
+        )
     return render_template('form.html', message="Image added to processing queue.")
 
 

@@ -18,9 +18,6 @@ import hashlib
 from google.cloud import datastore
 
 
-db = datastore.Client()
-
-
 @dataclass
 class Image:
     email: str
@@ -32,17 +29,20 @@ class Image:
         return str(hashlib.md5(bytes(key_value.encode("utf-8"))).hexdigest())
 
 
-def transaction():
-    return db.transaction()
+class Client:
 
+    db = datastore.Client()
 
-def create(image: Image) -> bool:
-    key = db.key('images', image.key())
-    # Check if image already exists
-    image_exists = db.get(key)
-    if image_exists:
-        return False
-    entity = datastore.Entity(key=key)
-    entity.update(asdict(image))
-    db.put(entity)
-    return True
+    def transaction(self):
+        return self.db.transaction()
+
+    def create(self, image: Image) -> bool:
+        key = self.db.key('images', image.key())
+        # Check if image already exists
+        image_exists = self.db.get(key)
+        if image_exists:
+            return False
+        entity = datastore.Entity(key=key)
+        entity.update(asdict(image))
+        self.db.put(entity)
+        return True
