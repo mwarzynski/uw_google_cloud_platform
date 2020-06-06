@@ -27,8 +27,8 @@ export BUCKET_IMAGES_SCALED=$PROJECT_ID-images-scaled
 #gsutil mb gs://$BUCKET_IMAGES_SCALED
 
 # Creating Pub/Sub
-export TOPIC_IMAGE_WAS_SCALED=image-was-scaled
-#gcloud pubsub topics create $TOPIC_IMAGE_WAS_SCALED
+export TOPIC_EMAILS_TO_SEND=emails-to-send
+#gcloud pubsub topics create $TOPIC_EMAILS_TO_SEND
 
 # Create Firebase Datastore
 # https://console.cloud.google.com/firestore/welcome?project=$PROJECT_ID
