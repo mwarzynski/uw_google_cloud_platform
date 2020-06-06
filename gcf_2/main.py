@@ -58,7 +58,7 @@ def gcf2(file_data, _):
     datastore.update_image_text(image_entity, image_text)
 
     # Send message to topic.
-    message = _prepate_message(
+    message = _prepare_message(
         image_entity.get("email"),
         image_entity.get("filename"),
         blob_name,
@@ -69,7 +69,7 @@ def gcf2(file_data, _):
     publisher.publish(topic_path, message.encode("utf-8"))
 
 
-def _prepate_message(recipient: str, filename: str, image_original: str, image_transformed: str, image_text: str) -> Message:
+def _prepare_message(recipient: str, filename: str, image_original: str, image_transformed: str, image_text: str) -> Message:
     html_content = f"Image original: {image_original}<br/>Image transformed: {image_transformed}<br/><br/>{image_text}"
     return Message(
         recipient,
