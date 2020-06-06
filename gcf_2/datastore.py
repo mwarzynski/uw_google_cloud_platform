@@ -3,6 +3,10 @@ from google.cloud import datastore
 db = datastore.Client()
 
 
+def transaction():
+    return db.transaction()
+
+
 def get_image_by_id(key_id: str):
     key = db.key('images', key_id)
     return db.get(key)

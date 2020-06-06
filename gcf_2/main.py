@@ -54,8 +54,9 @@ def gcf2(file_data, _):
     # Update image_text in Datastore.
     # Also, fetch the email for the recipient.
     image_id = blob_name.split(".")[0]
-    image_entity = datastore.get_image_by_id(image_id)
-    datastore.update_image_text(image_entity, image_text)
+    with datastore.transaction():
+        image_entity = datastore.get_image_by_id(image_id)
+        datastore.update_image_text(image_entity, image_text)
 
     # Send message to topic.
     message = _prepare_message(
