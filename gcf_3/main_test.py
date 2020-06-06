@@ -28,8 +28,7 @@ event_bytes = b'''
 
 
 @patch('main.sg')
-def test_mail_sent_properly(
-    sendgrid):
+def test_mail_sent_properly(sendgrid):
   # Define input data.
   event = base64.b64encode(event_bytes)
   # Define mail sender implementation.
