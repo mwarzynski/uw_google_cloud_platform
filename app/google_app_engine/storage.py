@@ -19,14 +19,6 @@ import os
 from flask import current_app
 from google.cloud import storage
 import six
-from werkzeug.exceptions import BadRequest
-
-
-def _check_extension(filename, allowed_extensions):
-    file, ext = os.path.splitext(filename)
-    if (ext.replace('.', '') not in allowed_extensions):
-        raise BadRequest(
-            '{0} has an invalid name or extension'.format(filename))
 
 
 def upload_file(file_stream, filename, content_type):
@@ -34,8 +26,6 @@ def upload_file(file_stream, filename, content_type):
     Uploads a file to a given Cloud Storage bucket and returns the public url
     to the new object.
     """
-    _check_extension(filename, current_app.config['ALLOWED_EXTENSIONS'])
-
     bucketname = os.getenv('GOOGLE_STORAGE_BUCKET')
 
     # [START bookshelf_cloud_storage_client]

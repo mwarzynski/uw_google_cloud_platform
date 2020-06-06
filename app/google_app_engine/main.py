@@ -22,6 +22,7 @@ from google.cloud import error_reporting
 import google.cloud.logging
 import storage
 import user
+from werkzeug.exceptions import BadRequest
 
 
 # [START upload_image_file]
@@ -60,15 +61,22 @@ if app.testing:
     user.test_user = "tester@google.com"
 
 
+def _check_extension(filename, allowed_extensions):
+    file, ext = os.path.splitext(filename)
+    if ext.replace('.', '') not in allowed_extensions:
+        raise BadRequest(
+            '{0} has an invalid name or extension'.format(filename))
+
+
 @app.route('/', methods=['GET', 'POST'])
 @user.authorize_by_headers
 def main():
     if request.method == "GET":
         return render_template('form.html')
-
+    # Parse form data.
     data = request.form.to_dict(flat=True)
-    # If an image was uploaded, update the data to point to the new image.
     image = request.files.get('image')
+    _check_extension(image.filename, current_app.config['ALLOWED_EXTENSIONS'])
     data['filename'] = image.filename
     _, file_extension = os.path.splitext(image.filename)
     data['email'] = g.username

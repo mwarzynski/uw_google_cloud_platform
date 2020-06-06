@@ -12,12 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# [START bookshelf_firestore_client_import]
 from dataclasses import dataclass, asdict
 import hashlib
 
 from google.cloud import datastore
-# [END bookshelf_firestore_client_import]
 
 
 @dataclass
