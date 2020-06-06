@@ -1,3 +1,0 @@
-runtime: python37
-env_variables:
-  GOOGLE_STORAGE_BUCKET: "gcp-lectures-project-images"
