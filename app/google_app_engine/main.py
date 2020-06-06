@@ -14,7 +14,7 @@
 
 import logging
 import hashlib
-import firestore
+import datastore
 import os
 from flask import g, current_app, Flask, render_template
 from flask import request
@@ -83,11 +83,14 @@ def main():
     image_data = image.read()
     image_file_digest = str(hashlib.md5(image_data).hexdigest())
     data['file_digest'] = image_file_digest
-    f_image = firestore.Image(data['email'], data['filename'], image_file_digest)
-    created = firestore.create(f_image)
-    if not created:
-        return render_template('form.html', message="Image already exists!")
-    upload_image_file(image_data, f_image.key() + file_extension, image.content_type)
+    # Run this block of code in transaction.
+    # If anything will go wrong, then it will rollback changes in Datastore (created entity).
+    with datastore.transaction():
+        f_image = datastore.Image(data['email'], data['filename'], image_file_digest)
+        created = datastore.create(f_image)
+        if not created:
+            return render_template('form.html', message="Image already exists!")
+        upload_image_file(image_data, f_image.key() + file_extension, image.content_type)
     return render_template('form.html', message="Image added to processing queue.")
 
 

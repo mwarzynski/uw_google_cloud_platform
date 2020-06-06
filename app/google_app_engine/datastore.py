@@ -18,6 +18,9 @@ import hashlib
 from google.cloud import datastore
 
 
+db = datastore.Client()
+
+
 @dataclass
 class Image:
     email: str
@@ -29,8 +32,11 @@ class Image:
         return str(hashlib.md5(bytes(key_value.encode("utf-8"))).hexdigest())
 
 
+def transaction():
+    return db.transaction()
+
+
 def create(image: Image) -> bool:
-    db = datastore.Client()
     key = db.key('images', image.key())
     # Check if image already exists
     image_exists = db.get(key)
