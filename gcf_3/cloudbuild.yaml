@@ -1,0 +1,10 @@
+steps:
+- name: 'gcr.io/cloud-builders/gcloud'
+  args:
+  - functions
+  - deploy
+  - gcf3
+  - --source=.
+  - --trigger-topic=${_TOPIC_EMAILS_TO_SEND}
+  - --set-env-vars=SENDGRID_API_KEY=${_SENDGRID_API_KEY}
+  - --runtime=python37

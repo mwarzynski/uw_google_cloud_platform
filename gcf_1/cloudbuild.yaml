@@ -1,0 +1,10 @@
+steps:
+- name: 'gcr.io/cloud-builders/gcloud'
+  args:
+  - functions
+  - deploy
+  - gcf1
+  - --source=.
+  - --trigger-bucket=${_BUCKET_IMAGES}
+  - --set-env-vars=BUCKET_IMAGES_SCALED=${_BUCKET_IMAGES_SCALED}
+  - --runtime=python37
