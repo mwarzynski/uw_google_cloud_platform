@@ -18,6 +18,10 @@ export SENDGRID_API_KEY="NO_SECRETS_IN_GIT_AS_EVERY_RESPONSIBLE_CITIZEN_WOULD_DO
 #gcloud services enable iap.googleapis.com
 #gcloud services enable sourcerepo.googleapis.com
 #gcloud services enable cloudbuild.googleapis.com
+#gcloud services enable cloudkms.googleapis.com
+
+#gcloud kms keyrings create mykeyring --location=global
+#gcloud kms keys create images --purpose=encryption --location=global --keyring=mykeyring
 
 # Create repositories.
 #gcloud source repos create gcf1
