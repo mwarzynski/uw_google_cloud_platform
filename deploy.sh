@@ -1,6 +1,7 @@
 #!/bin/bash
 
 export PROJECT_ID=$(gcloud config get-value project)
+export PROJECT_NUMBER=378457118825
 
 export SENDGRID_API_KEY="NO_SECRETS_IN_GIT_AS_EVERY_RESPONSIBLE_CITIZEN_WOULD_DO"
 

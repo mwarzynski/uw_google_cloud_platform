@@ -55,10 +55,10 @@ def _check_extension(filename, allowed_extensions):
 
 
 @app.route('/', methods=['GET', 'POST'])
-@user.authorize_by_headers
+@user.authorize_by_jwt
 def main():
     if request.method == "GET":
-        return render_template('form.html')
+        return render_template('form.html', user=g.username)
     # Parse form data.
     data = request.form.to_dict(flat=True)
     image = request.files.get('image')
@@ -75,13 +75,13 @@ def main():
         f_image = datastore.Image(data['email'], data['filename'], image_file_digest)
         created = datastore_client.create(f_image)
         if not created:
-            return render_template('form.html', message="Image already exists!")
+            return render_template('form.html', message="Image already exists!", user=g.username)
         storage.upload_file(
             image_data,
             f_image.key() + file_extension,
             image.content_type
         )
-    return render_template('form.html', message="Image added to processing queue.")
+    return render_template('form.html', message="Image added to processing queue.", user=g.username)
 
 
 @app.route('/errors')

@@ -10,31 +10,13 @@ cloud_project_id = os.getenv("PROJECT_ID")
 test_user = None
 
 
-def authorize_by_headers(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if test_user:
-            g.username = test_user
-        else:
-            user_header = request.headers.get("X-Goog-Authenticated-User-Email")
-            if user_header is None or len(user_header) == 0:
-                return make_response("not authorized"), 401
-            g.username = user_header.replace("accounts.google.com:", "")
-        return f(*args, **kwargs)
-    return decorated_function
-
-
 def authorize_by_jwt(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if test_user:
             g.username = test_user
         else:
-            auth_token = None
-            for k, v in request.cookies.items():
-                if "GCP_IAAP_AUTH_TOKEN_" in k:
-                    auth_token = v
-                    break
+            auth_token = request.headers["X-Goog-Iap-Jwt-Assertion"]
             if not auth_token:
                 return make_response("not authorized"), 401
             _, username, err = validate_iap_jwt_from_app_engine(auth_token)
